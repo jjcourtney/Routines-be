@@ -41,3 +41,31 @@ export async function dbFindOne(query: RoutineQuery, collection: Collection) {
     await client.close();
   }
 }
+
+export async function getLowestAvailableId(): Promise<number> {
+  const allSchedules = await dbFind({}, "schedules");
+
+  if (!allSchedules) return 1;
+  const allIds = allSchedules.map((schedule) => schedule.id);
+
+  return findSmallestPositiveInteger(allIds) || 9999;
+}
+
+export async function insertOne(query: RoutineQuery, collection: Collection) {
+  await client.connect();
+  const db = client.db("routines");
+  const routine = db.collection(collection);
+  const { acknowledged } = await routine.insertOne(query);
+  await client.close();
+
+  return acknowledged;
+}
+
+function findSmallestPositiveInteger(ids: number[]) {
+  const lookup = new Set(ids);
+  let i = 1;
+  while (lookup.has(i)) {
+    i++;
+  }
+  return i;
+}
